@@ -1,39 +1,58 @@
 {
   "expo": {
-    "name": "tecozam-fleet",
+    "name": "Tecozam Fleet",
     "slug": "tecozam-fleet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tecozamfleet",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#09090B"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tecozam.fleet",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para escanear tickets de combustible",
+        "NSPhotoLibraryUsageDescription": "Necesitamos acceso a la galería para seleccionar fotos de tickets"
+      }
     },
     "android": {
+      "package": "com.tecozam.fleet",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#09090B"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Necesitamos la cámara para escanear tickets."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Necesitamos acceso a fotos para seleccionar tickets."
+        }
+      ],
+      "expo-notifications",
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://bills-api.z-innova.com"
     }
   }
 }
