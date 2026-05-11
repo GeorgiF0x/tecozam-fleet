@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
 
     try {
-      const data = await apiClient.post<LoginResponse>("/api/auth/login", {
+      const data = await apiClient.post<LoginResponse>("/api/auth/campo/login", {
         username,
         password,
       });
@@ -126,7 +126,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       // Attempt to obtain a fresh access token using the stored refresh token
-      const res = await fetch("https://bills-api.z-innova.com/api/auth/refresh", {
+      const res = await fetch("https://bills-api.z-innova.com/api/auth/campo/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken: storedRefresh }),

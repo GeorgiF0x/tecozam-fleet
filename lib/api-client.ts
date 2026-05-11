@@ -41,7 +41,7 @@ async function refreshAccessToken(): Promise<string> {
     const refresh = await getRefreshToken();
     if (!refresh) throw new ApiError(401, "No refresh token available");
 
-    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+    const res = await fetch(`${API_URL}/api/auth/campo/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh }),

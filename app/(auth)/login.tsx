@@ -12,11 +12,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuthStore } from "@/stores/auth.store";
 import { colors, spacing, radius, fontSize, fontWeight, shadows } from "@/lib/theme";
 
 export default function LoginScreen() {
   const { login, isLoading } = useAuthStore();
+  const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -155,6 +157,18 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* ── Registro ──────────────────────────────────────── */}
+          <TouchableOpacity
+            style={styles.registerRow}
+            onPress={() => router.push("/(auth)/registro")}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.registerText}>
+              ¿Aún no tienes cuenta?{" "}
+              <Text style={styles.registerLink}>Regístrate</Text>
+            </Text>
+          </TouchableOpacity>
 
           {/* ── Footer ────────────────────────────────────────── */}
           <Text style={styles.footer}>
@@ -312,11 +326,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  // Register link
+  registerRow: {
+    alignItems: "center",
+    marginTop: spacing.xl,
+  },
+  registerText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedForeground,
+  },
+  registerLink: {
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
+  },
+
   // Footer
   footer: {
     textAlign: "center",
     color: colors.mutedForeground,
     fontSize: fontSize.xs,
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
   },
 });
