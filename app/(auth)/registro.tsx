@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -194,7 +195,11 @@ export default function RegistroScreen() {
 
           <View style={styles.brandContainer}>
             <View style={styles.logoBox}>
-              <Ionicons name="person-add" size={32} color={colors.primary} />
+              <Image
+                source={require("@/assets/images/tecozam-logo.png")}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <Text style={styles.appName}>
               <Text style={styles.appNameOrange}>Tecozam</Text>
@@ -401,16 +406,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   logoBox: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: colors.primary + "33",
     marginBottom: spacing.md,
     ...shadows.md,
+  },
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
   appName: {
     fontSize: fontSize.xl,

@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,7 +55,11 @@ export default function LoginScreen() {
           {/* ── Brand ─────────────────────────────────────────── */}
           <View style={styles.brandContainer}>
             <View style={styles.logoBox}>
-              <Ionicons name="car" size={36} color={colors.primary} />
+              <Image
+                source={require("@/assets/images/tecozam-logo.png")}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <Text style={styles.appName}>
               <Text style={styles.appNameOrange}>Tecozam</Text>
@@ -201,16 +206,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   logoBox: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: colors.primary + "33",
     marginBottom: spacing.lg,
     ...shadows.md,
+  },
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
   appName: {
     fontSize: fontSize.xxl,
