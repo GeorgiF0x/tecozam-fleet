@@ -66,7 +66,10 @@ export default function CameraScreen() {
     if (!cameraRef.current || capturing) return;
     setCapturing(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        imageType: "jpg",
+      });
       if (photo?.uri) {
         router.push({ pathname: "/scan/preview", params: { uri: photo.uri } });
       }
@@ -98,6 +101,8 @@ export default function CameraScreen() {
         style={StyleSheet.absoluteFill}
         facing="back"
         flash={flash}
+        zoom={0}
+        autofocus="on"
       />
 
       {/* ── Overlay ─── */}
@@ -177,8 +182,8 @@ export default function CameraScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const FRAME_W = 300;
-const FRAME_H = 180;
+const FRAME_W = 320;
+const FRAME_H = 420;
 const CORNER_SIZE = 20;
 const CORNER_THICKNESS = 3;
 

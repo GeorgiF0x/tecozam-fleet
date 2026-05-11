@@ -261,6 +261,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* ── Mis Tarjetas ──────────────────────────────── */}
+        <SectionHeader title="Tarjetas" />
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push("/cards")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuItemLeft}>
+            <View style={styles.menuItemIconContainer}>
+              <Ionicons name="card-outline" size={18} color={colors.primary} />
+            </View>
+            <Text style={styles.menuItemText}>Mis Tarjetas</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </TouchableOpacity>
+
         {/* ── Settings section ──────────────────────────── */}
         <SectionHeader title="Configuración" />
         <View style={styles.card}>
@@ -360,6 +376,38 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     ...shadows.sm,
+  },
+
+  // Menu item (e.g. Mis Tarjetas)
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md + 2,
+    ...shadows.sm,
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  menuItemIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary + "18",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuItemText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.foreground,
   },
 
   // Logout

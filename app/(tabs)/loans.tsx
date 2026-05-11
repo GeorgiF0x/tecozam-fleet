@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth.store";
 import {
   colors,
   spacing,
@@ -21,8 +22,19 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type LoanStatus = "activo" | "devuelto" | "vencido";
-type ResourceType = "vehiculo" | "tarjeta" | "herramienta" | "equipo" | string;
+type LoanStatus = "activo" | "devuelto" | "vencido" | string;
+type ResourceType = "vehiculo" | "tarjeta" | "viat" | string;
+
+interface PrestamoAPI {
+  id: number;
+  tipoRecurso?: string;
+  recursoDescripcion?: string;
+  trabajadorNombre?: string;
+  estado?: string;
+  fechaInicio?: string;
+  fechaFinPrevista?: string;
+  observaciones?: string;
+}
 
 interface Prestamo {
   id: number;
@@ -33,9 +45,22 @@ interface Prestamo {
   estado: LoanStatus;
 }
 
+function mapLoan(p: PrestamoAPI): Prestamo {
+  return {
+    id: p.id,
+    tipo: (p.tipoRecurso ?? "").toLowerCase(),
+    descripcion: p.recursoDescripcion ?? "Sin descripción",
+    fechaInicio: p.fechaInicio ?? "",
+    fechaLimite: p.fechaFinPrevista,
+    estado: (p.estado ?? "activo").toLowerCase() as LoanStatus,
+  };
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<LoanStatus, { label: string; color: string; bg: string }> = {
+const DEFAULT_LOAN_STATUS = { label: "Desconocido", color: colors.mutedForeground, bg: colors.muted };
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   activo: {
     label: "Activo",
     color: colors.success,
@@ -56,11 +81,13 @@ const STATUS_CONFIG: Record<LoanStatus, { label: string; color: string; bg: stri
 const RESOURCE_ICON: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   vehiculo: "car-outline",
   tarjeta: "card-outline",
+  viat: "radio-outline",
   herramienta: "build-outline",
   equipo: "hardware-chip-outline",
 };
 
-function resourceIcon(tipo: string): React.ComponentProps<typeof Ionicons>["name"] {
+function resourceIcon(tipo?: string): React.ComponentProps<typeof Ionicons>["name"] {
+  if (!tipo) return "key-outline";
   return RESOURCE_ICON[tipo.toLowerCase()] ?? "key-outline";
 }
 
@@ -88,7 +115,7 @@ function isNearExpiry(prestamo: Prestamo): boolean {
 // ─── Item component ───────────────────────────────────────────────────────────
 
 function LoanItem({ item }: { item: Prestamo }) {
-  const status = STATUS_CONFIG[item.estado];
+  const status = STATUS_CONFIG[item.estado] ?? DEFAULT_LOAN_STATUS;
   const nearExpiry = isNearExpiry(item);
   const daysLeft = item.fechaLimite ? daysUntil(item.fechaLimite) : null;
 
@@ -241,9 +268,15 @@ const emptyStyles = StyleSheet.create({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LoansScreen() {
+  const isAuth = useAuthStore((s) => s.isAuthenticated);
+
   const { data: prestamos = [], isLoading, refetch } = useQuery<Prestamo[]>({
     queryKey: ["prestamos"],
-    queryFn: () => apiClient.get<Prestamo[]>("/api/prestamos"),
+    queryFn: async () => {
+      const raw = await apiClient.get<PrestamoAPI[]>("/api/prestamos");
+      return raw.map(mapLoan);
+    },
+    enabled: isAuth,
   });
 
   const nearExpiryCount = prestamos.filter(isNearExpiry).length;

@@ -23,10 +23,28 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface DashboardStatsAPI {
+  totalFacturas: number;
+  totalOperaciones: number;
+  importeTotal: number;
+  porcentajeCotejado: number;
+  prestamosActivos: number;
+  alertasPendientes: number;
+  anomaliasDetectadas: number;
+}
+
 interface DashboardStats {
   gastoMes: number;
   alertasPendientes: number;
   prestamosActivos: number;
+}
+
+interface TicketAPI {
+  id: number;
+  fechaHora: string;
+  estacion: string;
+  importeTotal: number;
+  estadoCotejo: string;
 }
 
 interface Ticket {
@@ -34,12 +52,12 @@ interface Ticket {
   fecha: string;
   estacion: string;
   importe: number;
-  estado: "pendiente" | "cotejado" | "incidencia";
+  estado: string;
 }
 
 interface Prestamo {
   id: number;
-  estado: "activo" | "devuelto" | "vencido";
+  estado: string;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -49,20 +67,26 @@ function KpiCard({
   value,
   icon,
   color = colors.primary,
+  onPress,
 }: {
   label: string;
   value: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   color?: string;
+  onPress?: () => void;
 }) {
+  const Container = onPress ? TouchableOpacity : View;
   return (
-    <View style={kpiStyles.card}>
+    <Container style={kpiStyles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={[kpiStyles.iconBox, { backgroundColor: color + "22" }]}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
       <Text style={kpiStyles.value}>{value}</Text>
       <Text style={kpiStyles.label}>{label}</Text>
-    </View>
+      {onPress && (
+        <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} style={{ position: "absolute", top: spacing.md, right: spacing.md }} />
+      )}
+    </Container>
   );
 }
 
@@ -113,39 +137,32 @@ function SectionCard({
   onPress?: () => void;
   children?: React.ReactNode;
 }) {
-  const Wrapper = onPress ? TouchableOpacity : View;
-  return (
-    <Wrapper
-      style={sectionStyles.card}
-      onPress={onPress}
-      activeOpacity={0.75}
-    >
+  const content = (
+    <>
       <View style={sectionStyles.row}>
-        <View
-          style={[
-            sectionStyles.iconBox,
-            { backgroundColor: iconColor + "22" },
-          ]}
-        >
+        <View style={[sectionStyles.iconBox, { backgroundColor: iconColor + "22" }]}>
           <Ionicons name={icon} size={18} color={iconColor} />
         </View>
         <View style={sectionStyles.text}>
           <Text style={sectionStyles.title}>{title}</Text>
-          {subtitle && (
-            <Text style={sectionStyles.subtitle}>{subtitle}</Text>
-          )}
+          {subtitle && <Text style={sectionStyles.subtitle}>{subtitle}</Text>}
         </View>
         {onPress && (
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={colors.mutedForeground}
-          />
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         )}
       </View>
       {children}
-    </Wrapper>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={sectionStyles.card} onPress={onPress} activeOpacity={0.75}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return <View style={sectionStyles.card}>{content}</View>;
 }
 
 const sectionStyles = StyleSheet.create({
@@ -220,19 +237,43 @@ export default function HomeScreen() {
 
   const firstName = user?.trabajadorNombre?.split(" ")[0] ?? user?.username ?? "Conductor";
 
+  const isAuth = useAuthStore((s) => s.isAuthenticated);
+
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
-    queryFn: () => apiClient.get<DashboardStats>("/api/dashboard/stats"),
+    queryFn: async () => {
+      const raw = await apiClient.get<DashboardStatsAPI>("/api/dashboard/stats");
+      return {
+        gastoMes: raw.importeTotal ?? 0,
+        alertasPendientes: raw.alertasPendientes ?? 0,
+        prestamosActivos: raw.prestamosActivos ?? 0,
+      };
+    },
+    enabled: isAuth,
   });
 
   const { data: tickets } = useQuery<Ticket[]>({
-    queryKey: ["tickets"],
-    queryFn: () => apiClient.get<Ticket[]>("/api/tickets?limit=1&ordering=-fecha"),
+    queryKey: ["tickets-home"],
+    queryFn: async () => {
+      const raw = await apiClient.get<TicketAPI[]>("/api/tickets");
+      return raw.map((t) => ({
+        id: t.id,
+        fecha: t.fechaHora ?? "",
+        estacion: t.estacion ?? "Sin estación",
+        importe: t.importeTotal ?? 0,
+        estado: (t.estadoCotejo ?? "pendiente").toLowerCase(),
+      }));
+    },
+    enabled: isAuth,
   });
 
   const { data: prestamos } = useQuery<Prestamo[]>({
-    queryKey: ["prestamos"],
-    queryFn: () => apiClient.get<Prestamo[]>("/api/prestamos?estado=activo"),
+    queryKey: ["prestamos-home"],
+    queryFn: async () => {
+      const raw = await apiClient.get<{ id: number; estado: string }[]>("/api/prestamos");
+      return raw.map((p) => ({ id: p.id, estado: (p.estado ?? "activo").toLowerCase() }));
+    },
+    enabled: isAuth,
   });
 
   const lastTicket = tickets?.[0];
@@ -258,7 +299,7 @@ export default function HomeScreen() {
               })}
             </Text>
           </View>
-          <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7} onPress={() => router.push("/alerts")}>
             <Ionicons name="notifications-outline" size={22} color={colors.foreground} />
             {alertas > 0 && <View style={styles.bellBadge} />}
           </TouchableOpacity>
@@ -283,6 +324,7 @@ export default function HomeScreen() {
               value={String(alertas)}
               icon="warning-outline"
               color={alertas > 0 ? colors.warning : colors.mutedForeground}
+              onPress={() => router.push("/alerts")}
             />
           </View>
         )}
@@ -300,7 +342,7 @@ export default function HomeScreen() {
           }
           icon="alert-circle-outline"
           iconColor={alertas > 0 ? colors.warning : colors.mutedForeground}
-          onPress={() => router.push("/(tabs)/history")}
+          onPress={() => router.push("/alerts")}
         />
 
         {/* ── Loans card ────────────────────────────────── */}

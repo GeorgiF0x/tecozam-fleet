@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  ActivityIndicator,
   Image,
   StyleSheet,
   Text,
@@ -10,25 +9,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { apiClient } from "@/lib/api-client";
 import { colors, fontSize, fontWeight, radius, spacing } from "@/lib/theme";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface OcrResult {
-  estacion?: string;
-  importe?: number;
-  litros?: number;
-  fecha?: string;
-  concepto?: string;
-  [key: string]: unknown;
-}
 
 export default function PreviewScreen() {
   const router = useRouter();
   const { uri } = useLocalSearchParams<{ uri: string }>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (!uri) {
     router.replace("/scan/camera");
@@ -37,29 +22,9 @@ export default function PreviewScreen() {
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleSend() {
-    setError(null);
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      const filename = uri.split("/").pop() ?? "ticket.jpg";
-      const match = /\.(\w+)$/.exec(filename);
-      const mimeType = match ? `image/${match[1]}` : "image/jpeg";
-
-      formData.append("image", {
-        uri,
-        name: filename,
-        type: mimeType,
-      } as unknown as Blob);
-
-      const result = await apiClient.upload<OcrResult>("/api/tickets/ocr", formData);
-      router.replace({ pathname: "/scan/result", params: { data: JSON.stringify(result) } });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al procesar el ticket";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+  function handleSend() {
+    // Navigate directly to result — OCR + PIN + submit happen there
+    router.replace({ pathname: "/scan/result", params: { uri } });
   }
 
   function handleRetake() {
@@ -86,32 +51,12 @@ export default function PreviewScreen() {
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
-      {/* Loading overlay */}
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Procesando ticket con IA...</Text>
-          </View>
-        </View>
-      )}
-
       {/* Bottom bar */}
       <SafeAreaView edges={["bottom"]} style={styles.bottomBar}>
-        {error && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
-            <Text style={styles.errorText} numberOfLines={2}>
-              {error}
-            </Text>
-          </View>
-        )}
-
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnGhost]}
             onPress={handleRetake}
-            disabled={loading}
             activeOpacity={0.75}
           >
             <Ionicons name="refresh-outline" size={18} color={colors.primary} />
@@ -119,13 +64,12 @@ export default function PreviewScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnPrimary, loading && styles.disabledBtn]}
+            style={[styles.actionBtn, styles.actionBtnPrimary]}
             onPress={handleSend}
-            disabled={loading}
             activeOpacity={0.85}
           >
-            <Ionicons name="cloud-upload-outline" size={18} color={colors.background} />
-            <Text style={styles.actionBtnPrimaryText}>Enviar</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.background} />
+            <Text style={styles.actionBtnPrimaryText}>Continuar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -159,28 +103,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.foreground,
   },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xxl,
-    alignItems: "center",
-    gap: spacing.lg,
-    minWidth: 220,
-  },
-  loadingText: {
-    fontSize: fontSize.md,
-    color: colors.foreground,
-    fontWeight: fontWeight.medium,
-    textAlign: "center",
-  },
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -190,21 +112,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     gap: spacing.md,
-  },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.danger + "22",
-    borderWidth: 1,
-    borderColor: colors.danger + "55",
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    color: colors.danger,
   },
   actions: {
     flexDirection: "row",
@@ -238,8 +145,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.background,
-  },
-  disabledBtn: {
-    opacity: 0.5,
   },
 });

@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth.store";
 import {
   colors,
   spacing,
@@ -23,7 +25,18 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type TicketStatus = "pendiente" | "cotejado" | "incidencia";
+type TicketStatus = "pendiente" | "cotejado" | "incidencia" | "multiple" | "sin_coincidencia";
+
+interface TicketAPI {
+  id: number;
+  fechaHora: string;
+  estacion: string;
+  importeTotal: number;
+  litros?: number;
+  estadoCotejo: string;
+  concepto?: string;
+  proveedorNombre?: string;
+}
 
 interface Ticket {
   id: number;
@@ -50,26 +63,26 @@ const FILTERS: FilterChip[] = [
   { key: "incidencia", label: "Incidencia" },
 ];
 
-const STATUS_CONFIG: Record<
-  TicketStatus,
-  { label: string; color: string; bg: string }
-> = {
-  pendiente: {
-    label: "Pendiente",
-    color: colors.warning,
-    bg: colors.warning + "22",
-  },
-  cotejado: {
-    label: "Cotejado",
-    color: colors.success,
-    bg: colors.success + "22",
-  },
-  incidencia: {
-    label: "Incidencia",
-    color: colors.danger,
-    bg: colors.danger + "22",
-  },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  pendiente: { label: "Pendiente", color: colors.warning, bg: colors.warning + "22" },
+  cotejado: { label: "Cotejado", color: colors.success, bg: colors.success + "22" },
+  incidencia: { label: "Incidencia", color: colors.danger, bg: colors.danger + "22" },
+  multiple: { label: "Múltiple", color: colors.info, bg: colors.info + "22" },
+  sin_coincidencia: { label: "Sin coincidencia", color: colors.danger, bg: colors.danger + "22" },
 };
+
+const DEFAULT_STATUS = { label: "Desconocido", color: colors.mutedForeground, bg: colors.muted };
+
+function mapTicket(t: TicketAPI): Ticket {
+  return {
+    id: t.id,
+    fecha: t.fechaHora,
+    estacion: t.estacion ?? "Sin estación",
+    importe: t.importeTotal ?? 0,
+    litros: t.litros,
+    estado: (t.estadoCotejo?.toLowerCase() ?? "pendiente") as TicketStatus,
+  };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,10 +103,10 @@ function formatDate(dateStr: string): string {
 
 // ─── Item component ───────────────────────────────────────────────────────────
 
-function TicketItem({ item }: { item: Ticket }) {
-  const status = STATUS_CONFIG[item.estado];
+function TicketItem({ item, onPress }: { item: Ticket; onPress: () => void }) {
+  const status = STATUS_CONFIG[item.estado] ?? DEFAULT_STATUS;
   return (
-    <View style={itemStyles.card}>
+    <TouchableOpacity style={itemStyles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={itemStyles.left}>
         <View style={itemStyles.iconBox}>
           <Ionicons name="receipt-outline" size={18} color={colors.primary} />
@@ -113,7 +126,7 @@ function TicketItem({ item }: { item: Ticket }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -224,9 +237,16 @@ const emptyStyles = StyleSheet.create({
 export default function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("todos");
 
+  const router = useRouter();
+  const isAuth = useAuthStore((s) => s.isAuthenticated);
+
   const { data: tickets = [], isLoading, refetch } = useQuery<Ticket[]>({
     queryKey: ["tickets"],
-    queryFn: () => apiClient.get<Ticket[]>("/api/tickets"),
+    queryFn: async () => {
+      const raw = await apiClient.get<TicketAPI[]>("/api/tickets");
+      return raw.map(mapTicket);
+    },
+    enabled: isAuth,
   });
 
   const filtered =
@@ -235,7 +255,7 @@ export default function HistoryScreen() {
       : tickets.filter((t) => t.estado === activeFilter);
 
   const renderItem = ({ item }: ListRenderItemInfo<Ticket>) => (
-    <TicketItem item={item} />
+    <TicketItem item={item} onPress={() => router.push(`/ticket/${item.id}`)} />
   );
 
   return (

@@ -36,14 +36,6 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="scan"
-          options={{ presentation: "fullScreenModal" }}
-        />
-        <Stack.Screen
-          name="manual"
-          options={{ presentation: "modal" }}
-        />
       </Stack>
     </QueryClientProvider>
   );

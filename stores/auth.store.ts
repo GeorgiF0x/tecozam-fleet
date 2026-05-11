@@ -13,15 +13,19 @@ export interface AuthUser {
 }
 
 interface LoginResponse {
-  access: string;
-  refresh: string;
-  user: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+  rol: string;
+  username: string;
+  expiresIn: number;
 }
 
 interface RefreshResponse {
-  access: string;
-  refresh?: string;
-  user?: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+  rol: string;
+  username: string;
+  expiresIn: number;
 }
 
 interface AuthState {
@@ -61,15 +65,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
       });
 
-      await storeTokens(data.access, data.refresh);
-      await SecureStore.setItemAsync(KEY_USER, JSON.stringify(data.user));
+      const user: AuthUser = {
+        id: 0,
+        username: data.username,
+        rol: data.rol,
+      };
+
+      await storeTokens(data.accessToken, data.refreshToken);
+      await SecureStore.setItemAsync(KEY_USER, JSON.stringify(user));
 
       set({
         isAuthenticated: true,
         isLoading: false,
-        user: data.user,
-        accessToken: data.access,
-        refreshToken: data.refresh,
+        user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       });
     } catch (error) {
       set({ isLoading: false });
@@ -119,7 +129,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await fetch("https://bills-api.z-innova.com/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh: storedRefresh }),
+        body: JSON.stringify({ refreshToken: storedRefresh }),
       });
 
       if (!res.ok) {
@@ -131,12 +141,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       const data = (await res.json()) as RefreshResponse;
-      const newRefresh = data.refresh ?? storedRefresh;
+      const newRefresh = data.refreshToken ?? storedRefresh;
 
-      await storeTokens(data.access, newRefresh);
+      await storeTokens(data.accessToken, newRefresh);
 
       // Resolve user: prefer response user, fall back to stored
-      let user: AuthUser | null = data.user ?? null;
+      let user: AuthUser | null = data.username ? { id: 0, username: data.username, rol: data.rol } : null;
       if (!user && storedUser) {
         try {
           user = JSON.parse(storedUser) as AuthUser;
@@ -153,7 +163,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
         user,
-        accessToken: data.access,
+        accessToken: data.accessToken,
         refreshToken: newRefresh,
       });
     } catch {
